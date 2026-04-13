@@ -241,6 +241,7 @@ Process each file one at a time. For each file:
    - Semantic similarity: if two concepts solve the same problem without a structural link, add `semantically_similar_to` INFERRED edge (confidence 0.6-0.95). Non-obvious cross-file links only.
    - Hyperedges: if 3+ nodes share a concept/flow not captured by pairwise edges, add a hyperedge. Max 3 per file.
    - confidence_score REQUIRED on every edge: EXTRACTED=1.0, INFERRED=0.6-0.9 (reason individually), AMBIGUOUS=0.1-0.3
+   - Language: all node labels MUST be in the same language as the source material. If the source is in Chinese, labels must be Chinese. If the source is in Japanese, labels must be Japanese. Do not translate labels into English.
 3. Accumulate results across all files
 
 Schema for each file's output:
@@ -385,7 +386,7 @@ Replace INPUT_PATH with the actual path.
 
 ### Step 5 - Label communities
 
-Read `.graphify_analysis.json`. For each community key, look at its node labels and write a 2-5 word plain-language name (e.g. "Attention Mechanism", "Training Pipeline", "Data Loading").
+Read `.graphify_analysis.json`. For each community key, look at its node labels and write a 2-5 word plain-language name **in the same language as the node labels** (e.g. "Attention Mechanism", "Training Pipeline", "Data Loading" for English sources; "注意力机制", "训练流程", "数据加载" for Chinese sources). Do not translate — if the node labels are in Chinese, the community name must also be Chinese.
 
 Then regenerate the report and save the labels for the visualizer:
 

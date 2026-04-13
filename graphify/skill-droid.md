@@ -257,6 +257,7 @@ Rules:
 - EXTRACTED: relationship explicit in source (import, call, citation, "see §3.2")
 - INFERRED: reasonable inference (shared data structure, implied dependency)
 - AMBIGUOUS: uncertain - flag for review, do not omit
+- Language: all node labels MUST be in the same language as the source material. If the source is in Chinese, labels must be Chinese. If the source is in Japanese, labels must be Japanese. Do not translate labels into English.
 
 Code files: focus on semantic edges AST cannot find (call relationships, shared data, arch patterns).
   Do not re-extract imports - AST already has those.
@@ -440,7 +441,7 @@ Replace INPUT_PATH with the actual path.
 
 ### Step 5 - Label communities
 
-Read `.graphify_analysis.json`. For each community key, look at its node labels and write a 2-5 word plain-language name (e.g. "Attention Mechanism", "Training Pipeline", "Data Loading").
+Read `.graphify_analysis.json`. For each community key, look at its node labels and write a 2-5 word plain-language name **in the same language as the node labels** (e.g. "Attention Mechanism", "Training Pipeline", "Data Loading" for English sources; "注意力机制", "训练流程", "数据加载" for Chinese sources). Do not translate — if the node labels are in Chinese, the community name must also be Chinese.
 
 Then regenerate the report and save the labels for the visualizer:
 
