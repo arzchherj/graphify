@@ -42,7 +42,7 @@ drivers/gpu/
 drivers/media/
 sound/
 Documentation/translations/
-arch/arm64/       # 只保留你关心的架构
+arch/arm64/       # 排除不需要的架构，只保留你关心的
 arch/mips/
 ```
 
@@ -64,7 +64,7 @@ Graphify 的 `detect.py` 实现了完整的 `.graphifyignore` 机制，支持 gi
 
 LLM 成本只花在文档语义提取上。文档数量远少于代码文件（几十到几百个 md），完全可控。
 
-**关键：** 同目录下的文件会被分到同一个 chunk（每 chunk 20-25 个文件），LLM 在同一 chunk 内就能发现跨书的 `semantically_similar_to` 关系。
+**关键：** 同目录下的文件会被分到同一个 chunk，LLM 在同一 chunk 内就能发现跨书的 `semantically_similar_to` 关系。
 
 ---
 
