@@ -708,6 +708,15 @@ def to_obsidian(
     }
     (obsidian_dir / "graph.json").write_text(json.dumps(graph_config, indent=2), encoding="utf-8")
 
+    # Write app.json to ensure wikilinks resolve by shortest path.
+    # Without this, [[link]] may fail if the vault has non-default link settings
+    # or the output directory is embedded inside a larger vault.
+    app_config = {
+        "useMarkdownLinks": False,
+        "newLinkFormat": "shortest",
+    }
+    (obsidian_dir / "app.json").write_text(json.dumps(app_config, indent=2), encoding="utf-8")
+
     return G.number_of_nodes() + community_notes_written
 
 
