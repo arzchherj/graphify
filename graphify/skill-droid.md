@@ -32,6 +32,8 @@ Turn any folder of files into a navigable knowledge graph with community detecti
 /graphify query "<question>" --budget 1500            # cap answer at N tokens
 /graphify path "AuthModule" "Database"                # shortest path between two concepts
 /graphify explain "SwinTransformer"                   # plain-language explanation of a node
+/graphify preprocess <doc_dir>                        # split books/docs into concept-card files, then run /graphify on the output
+/graphify preprocess <doc_dir> --output <concepts>    # custom output directory for concept cards
 ```
 
 ## What graphify is for
@@ -1227,6 +1229,146 @@ This writes a `## graphify` section to the local `CLAUDE.md` that instructs Clau
 ```bash
 graphify claude uninstall  # remove the section
 ```
+
+---
+
+---
+
+## For /graphify preprocess
+
+Convert a library of technical books, textbooks, or long documents into
+individual concept-card files before building the knowledge graph. This is the
+recommended workflow when a corpus contains structured long-form documents
+(chapters, sections) that would otherwise produce chapter-level nodes instead
+of concept-level nodes.
+
+**Trigger:** `/graphify preprocess <doc_dir> [--output <concepts_dir>]`
+
+### What the preprocess command does
+
+**Step 1 — Split documents into chapter/section chunks (deterministic)**
+
+```bash
+$(cat graphify-out/.graphify_python) -m graphify preprocess DOC_DIR --output CONCEPTS_DIR
+```
+
+Replace `DOC_DIR` with the directory containing the books/documents. Replace
+`CONCEPTS_DIR` with the desired output directory (default: `./concepts`).
+
+This step requires no LLM. It reads `.md`, `.txt`, `.rst`, and `.pdf` files,
+splits them by heading/chapter markers, and writes a chunk manifest to
+`CONCEPTS_DIR/.graphify_chunks.json`. It prints a summary like:
+
+```
+Preprocess: 47 sections from 3 file(s)
+  deep_learning_book.pdf: 18 section(s)
+  algorithms.md: 22 section(s)
+  os_notes.txt: 7 section(s)
+
+Chunk manifest saved to: concepts/.graphify_chunks.json
+```
+
+**Step 2 — Extract concept cards via LLM subagents (parallel)**
+
+After Step 1, read `CONCEPTS_DIR/.graphify_chunks.json` to get the full list
+of chunks.  Print a timing estimate (same formula as the main pipeline:
+`ceil(chunks / 10)` subagents, ~45s each).
+
+**MANDATORY: dispatch ALL subagents in a single message** — one per group of
+10 chunks. Each subagent receives this exact prompt (substitute CHUNK_LIST,
+CHUNK_NUM, TOTAL_CHUNKS, and CONCEPTS_DIR):
+
+```
+You are a graphify concept-extraction subagent.
+
+Read the document sections listed below and extract all independent concept
+units. For each concept write exactly one Markdown file to the output
+directory. Use the graphify.preprocess helpers to write the files.
+
+Output directory: CONCEPTS_DIR
+
+Chunks (batch CHUNK_NUM of TOTAL_CHUNKS):
+CHUNK_LIST
+
+For each chunk, call:
+
+```python
+import json
+from pathlib import Path
+from graphify.preprocess import parse_concept_cards, write_concept_card, build_extraction_prompt
+
+chunks = CHUNK_DATA  # list of dicts from the manifest slice
+output_dir = Path("CONCEPTS_DIR")
+
+# Determine domain subfolder from source path
+def domain_from_source(src):
+    # Use the grandparent directory name of the source file as domain label,
+    # falling back to the file stem if it is directly under doc_dir.
+    p = Path(src)
+    parts = p.parts
+    # Find a meaningful directory label (skip last two path components = file + immediate parent)
+    for part in reversed(parts[:-1]):
+        if part not in (".", "..", "/"):
+            return part
+    return p.stem
+
+for chunk in chunks:
+    prompt = build_extraction_prompt(chunk)
+    # Call the LLM here (you are the LLM — generate concept cards now):
+    # Produce the concept blocks in the ---CONCEPT: ...---END--- format,
+    # then parse and write them.
+    # IMPORTANT: generate the concept block text yourself using the prompt above,
+    # then pass it to parse_concept_cards().
+    llm_output = <YOUR_GENERATED_CONCEPT_BLOCKS>
+    cards = parse_concept_cards(llm_output)
+    domain = domain_from_source(chunk["source_file"])
+    chunk_out = output_dir / domain
+    for i, card in enumerate(cards):
+        write_concept_card(
+            concept_name=card["name"],
+            definition=card["definition"],
+            key_points=card["key_points"],
+            relations=card["relations"],
+            source=card.get("source") or chunk["source_file"],
+            output_dir=chunk_out,
+        )
+print(f"Done: wrote concept cards to {output_dir}")
+```
+
+**Concept extraction rules:**
+- Each concept unit is a distinct technical concept, algorithm, data structure,
+  principle, or method.
+- Do NOT produce nodes for chapter titles, preambles, or transition sentences.
+- Use standard academic terminology for concept names so that the same concept
+  from different books is named consistently and can be deduplicated by the
+  graph builder.
+- "与其他概念的关系" / "Relations" lines must name specific concepts explicitly,
+  e.g. "Attention Mechanism depends on Softmax" or "Backpropagation is used by
+  Gradient Descent". Vague lines like "related to many things" are forbidden.
+- Aim for 3–8 concepts per section. Do not produce trivial cards for every
+  paragraph.
+
+**Step 3 — Run graphify on the concept cards**
+
+After all subagents complete, tell the user:
+
+```
+Concept extraction complete.
+  Concept cards written to: CONCEPTS_DIR/
+  Run /graphify CONCEPTS_DIR to build the knowledge graph.
+```
+
+Then immediately offer to run it:
+> "Ready to build the concept graph? Run `/graphify CONCEPTS_DIR`."
+
+If the user says yes, proceed with the full graphify pipeline on `CONCEPTS_DIR`.
+
+### Incremental updates
+
+When the user adds a new book:
+1. Run `graphify preprocess NEW_BOOK_DIR --output CONCEPTS_DIR` (splits new book only)
+2. The subagents extract and write new concept cards into `CONCEPTS_DIR`
+3. Run `/graphify CONCEPTS_DIR --update` to merge new concepts into the existing graph
 
 ---
 

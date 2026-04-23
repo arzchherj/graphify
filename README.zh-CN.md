@@ -133,6 +133,11 @@ When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` 
 /graphify path "DigestAuth" "Response"
 /graphify explain "SwinTransformer"
 
+# preprocess（预处理）- 适用于教材、课本等长篇结构化文档
+# 先将章节拆分为概念卡片文件，再对输出目录运行 /graphify
+/graphify preprocess ./books                      # 拆分文档 → ./concepts/
+/graphify preprocess ./books --output ./my-cards  # 自定义输出目录
+
 /graphify ./raw --watch            # 文件变更时自动同步图谱（代码：立即更新；文档：提醒你）
 /graphify ./raw --wiki             # 构建可供 agent 抓取的 wiki（index.md + 每个 community 一篇文章）
 /graphify ./raw --svg              # 导出 graph.svg

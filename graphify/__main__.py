@@ -789,6 +789,8 @@ def main() -> None:
         print("  trae-cn uninstall      remove graphify section from AGENTS.md")
         print("  antigravity install     write .agent/rules + .agent/workflows + skill (Google Antigravity)")
         print("  antigravity uninstall   remove .agent/rules, .agent/workflows, and skill")
+        print("  preprocess <doc_dir>    split documents into chapter chunks for LLM concept extraction")
+        print("    --output <dir>          output directory for concept cards (default: ./concepts)")
         print()
         return
 
@@ -981,6 +983,29 @@ def main() -> None:
                 pass
         result = run_benchmark(graph_path, corpus_words=corpus_words)
         print_benchmark(result)
+    elif cmd == "preprocess":
+        if len(sys.argv) < 3:
+            print("Usage: graphify preprocess <doc_dir> [--output <concepts_dir>]", file=sys.stderr)
+            sys.exit(1)
+        from graphify.preprocess import preprocess_dir
+        doc_dir = Path(sys.argv[2])
+        output_dir = Path("./concepts")
+        args = sys.argv[3:]
+        i = 0
+        while i < len(args):
+            if args[i] in ("--output", "-o") and i + 1 < len(args):
+                output_dir = Path(args[i + 1])
+                i += 2
+            elif args[i].startswith("--output="):
+                output_dir = Path(args[i].split("=", 1)[1])
+                i += 1
+            else:
+                i += 1
+        try:
+            preprocess_dir(doc_dir, output_dir, verbose=True)
+        except FileNotFoundError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            sys.exit(1)
     else:
         print(f"error: unknown command '{cmd}'", file=sys.stderr)
         print("Run 'graphify --help' for usage.", file=sys.stderr)

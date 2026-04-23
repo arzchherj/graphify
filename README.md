@@ -219,6 +219,11 @@ When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` 
 /graphify path "DigestAuth" "Response"
 /graphify explain "SwinTransformer"
 
+# preprocess - for textbooks and long structured documents
+# splits chapters into concept-card files first, then run /graphify on the output
+/graphify preprocess ./books                      # split docs → ./concepts/
+/graphify preprocess ./books --output ./my-cards  # custom output directory
+
 /graphify ./raw --watch            # auto-sync graph as files change (code: instant, docs: notifies you)
 /graphify ./raw --wiki             # build agent-crawlable wiki (index.md + article per community)
 /graphify ./raw --svg              # export graph.svg
