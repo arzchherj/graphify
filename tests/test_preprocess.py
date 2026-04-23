@@ -219,7 +219,7 @@ def test_parse_concept_cards_partial():
     # Only definition, no key_points
     partial = (
         "---CONCEPT: Gradient Descent---\n"
-        "定义：An optimisation algorithm.\n"
+        "定义：An optimization algorithm.\n"
         "---END---\n"
     )
     cards = parse_concept_cards(partial)
